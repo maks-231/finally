@@ -88,7 +88,7 @@ The user runs a single Docker command (or a provided start script). A browser op
 finally/
 ├── frontend/                 # Next.js TypeScript project (static export)
 ├── backend/                  # FastAPI uv project (Python)
-│   └── db/                   # Schema definitions, seed data, migration logic
+│   └── db/                   # Schema definitions, seed data (lazy-initialized, no migrations)
 ├── planning/                 # Project-wide documentation for agents
 │   ├── PLAN.md               # This document
 │   └── ...                   # Additional agent reference docs
@@ -137,6 +137,7 @@ LLM_MOCK=false
 - If `MASSIVE_API_KEY` is set and non-empty → backend uses Massive REST API for market data
 - If `MASSIVE_API_KEY` is absent or empty → backend uses the built-in market simulator
 - If `LLM_MOCK=true` → backend returns deterministic mock LLM responses (for E2E tests)
+- If `OPENROUTER_API_KEY` is absent/empty and `LLM_MOCK` is not `true` → the backend still starts normally (market data, portfolio, and watchlist all work); `POST /api/chat` returns a 503 with a clear error message (e.g. "AI assistant unavailable: OPENROUTER_API_KEY not configured") instead of crashing the whole app
 - The backend reads `.env` from the project root (mounted into the container or read via docker `--env-file`)
 
 ---
@@ -216,6 +217,10 @@ All tables include a `user_id` column defaulting to `"default"`. This is hardcod
 - `updated_at` TEXT (ISO timestamp)
 - UNIQUE constraint on `(user_id, ticker)`
 
+**Trade execution rules** (apply to both manual trades and LLM-initiated trades):
+- **Buy**: rejected if `quantity * price > cash_balance`. On success, `avg_cost` is recalculated as a weighted average: `new_avg_cost = (old_avg_cost * old_qty + price * trade_qty) / (old_qty + trade_qty)`. If no existing position, the row is created with `avg_cost = price`.
+- **Sell**: rejected if `quantity > current position quantity` — no short selling. `avg_cost` is unchanged by sells (only realizes P&L against the existing cost basis). If the sell brings `quantity` to exactly 0, the position row is deleted rather than kept at zero.
+
 **trades** — Trade history (append-only log)
 - `id` TEXT PRIMARY KEY (UUID)
 - `user_id` TEXT (default: `"default"`)
@@ -230,6 +235,8 @@ All tables include a `user_id` column defaulting to `"default"`. This is hardcod
 - `user_id` TEXT (default: `"default"`)
 - `total_value` REAL
 - `recorded_at` TEXT (ISO timestamp)
+
+The 30-second snapshot recorder is its own `asyncio` background task, separate from the market data tick loop (§6) — the two run at different cadences (~500ms vs 30s) and shouldn't be coupled.
 
 **chat_messages** — Conversation history with LLM
 - `id` TEXT PRIMARY KEY (UUID)
@@ -270,6 +277,7 @@ All tables include a `user_id` column defaulting to `"default"`. This is hardcod
 ### Chat
 | Method | Path | Description |
 |--------|------|-------------|
+| GET | `/api/chat` | Retrieve persisted conversation history (for restoring the chat panel on page load) |
 | POST | `/api/chat` | Send a message, receive complete JSON response (message + executed actions) |
 
 ### System
@@ -290,7 +298,7 @@ There is an OPENROUTER_API_KEY in the .env file in the project root.
 When the user sends a chat message, the backend:
 
 1. Loads the user's current portfolio context (cash, positions with P&L, watchlist with live prices, total portfolio value)
-2. Loads recent conversation history from the `chat_messages` table
+2. Loads recent conversation history from the `chat_messages` table — the last 20 messages (10 user/assistant turns), a fixed window chosen for simplicity over token-counting
 3. Constructs a prompt with a system message, portfolio context, conversation history, and the user's new message
 4. Calls the LLM via LiteLLM → OpenRouter, requesting structured output, using the cerebras-inference skill
 5. Parses the complete structured JSON response
@@ -315,8 +323,8 @@ The LLM is instructed to respond with JSON matching this schema:
 ```
 
 - `message` (required): The conversational text shown to the user
-- `trades` (optional): Array of trades to auto-execute. Each trade goes through the same validation as manual trades (sufficient cash for buys, sufficient shares for sells)
-- `watchlist_changes` (optional): Array of watchlist modifications
+- `trades` (optional): Array of trades to auto-execute. Each trade goes through the same validation as manual trades (sufficient cash for buys, sufficient shares for sells — no short selling, see §7)
+- `watchlist_changes` (optional): Array of watchlist modifications. `action` is one of `"add"` | `"remove"`, mirroring the two watchlist REST operations
 
 ### Auto-Execution
 
@@ -357,7 +365,7 @@ The frontend is a single-page application with a dense, terminal-inspired layout
 - **Portfolio heatmap** — treemap visualization where each rectangle is a position, sized by portfolio weight, colored by P&L (green = profit, red = loss)
 - **P&L chart** — line chart showing total portfolio value over time, using data from `portfolio_snapshots`
 - **Positions table** — tabular view of all positions: ticker, quantity, avg cost, current price, unrealized P&L, % change
-- **Trade bar** — simple input area: ticker field, quantity field, buy button, sell button. Market orders, instant fill.
+- **Trade bar** — simple input area: ticker field, quantity field (accepts decimal input, matching the `REAL` quantity column — fractional shares are supported), buy button, sell button. Market orders, instant fill.
 - **AI chat panel** — docked/collapsible sidebar. Message input, scrolling conversation history, loading indicator while waiting for LLM response. Trade executions and watchlist changes shown inline as confirmations.
 - **Header** — portfolio total value (updating live), connection status indicator, cash balance
 
@@ -454,3 +462,28 @@ The container is designed to deploy to AWS App Runner, Render, or any container 
 - Portfolio visualization: heatmap renders with correct colors, P&L chart has data points
 - AI chat (mocked): send a message, receive a response, trade execution appears inline
 - SSE resilience: disconnect and verify reconnection
+
+---
+
+## 13. Review Notes — Questions, Clarifications & Simplifications
+
+*Added during a documentation review. Market data (§6) is already built and summarized in `MARKET_DATA_SUMMARY.md`; the notes below focus on the remaining unbuilt surface — portfolio, LLM chat, frontend, and deployment.*
+
+### Questions & Clarifications — Resolved
+
+1. **Sparkline history on page load/refresh (§2, §10)** — **Confirmed as-is.** Sparklines intentionally start empty on every page load and fill in progressively from the live SSE stream. No backfill endpoint — keeps the price cache simple (current values only, no retained history) and matches the "zero config" philosophy. No spec change needed.
+2. **Avg cost recalculation (§7)** — **Resolved.** Weighted-average cost basis on buys; unchanged on sells; position row deleted when quantity hits exactly 0. Formula now stated in §7.
+3. **Shorting / overselling (§7, §12)** — **Resolved.** No short selling — a sell is rejected if `quantity` exceeds the current position. Stated explicitly in §7.
+4. **Chat history on page load (§8, §10)** — **Resolved.** Added `GET /api/chat` to §8 to return persisted history, reusing the existing path rather than adding a new one (see Simplification 2, now applied).
+5. **`watchlist_changes.action` enum (§9)** — **Resolved.** `"add"` | `"remove"`, stated in §9.
+6. **Conversation history window (§9)** — **Resolved.** Fixed window of the last 20 messages (10 turns), stated in §9. Chosen over token-counting for simplicity.
+7. **Missing `OPENROUTER_API_KEY` behavior (§5)** — **Resolved.** Backend still starts and all non-chat features work; `POST /api/chat` returns 503 with a clear error instead of crashing the app. Stated in §5.
+8. **Portfolio snapshot scheduler ownership (§7)** — **Resolved.** A separate `asyncio` background task from the market data loop, since the two run on different cadences. Stated in §7.
+9. **Trade history visibility (§8, §10)** — **Resolved: out of scope for MVP.** The `trades` log exists for correctness/audit (and could back a future stretch feature) but no endpoint or UI view is needed now. No spec change.
+10. **Fractional share input in the UI (§10)** — **Resolved.** Trade bar quantity field accepts decimal input, matching the `REAL` schema type. Stated in §10.
+
+### Simplification Opportunities
+
+1. **Directory structure wording mismatch (§4 vs §7)** — **Applied.** Dropped "migration logic" from §4.
+2. **Reuse `/api/chat` for history instead of a new endpoint** — **Applied.** §8 now adds `GET /api/chat` on the existing path instead of a separate history route.
+3. **Docker `HEALTHCHECK`** — **Not yet applied.** Still worth adding a `HEALTHCHECK` directive to the Dockerfile in §11 using `/api/health` when that section is implemented; left open since it's a deployment detail rather than an open design question.
