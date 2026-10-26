@@ -1,0 +1,18 @@
+{
+    "name": "maks-231-tools",
+    "owner": {
+        "name": "maks-231",
+        "email": "m.ahtirschii@gmail.com"
+    },
+    "plugins": [
+        {   "name": "independent-reviewer",
+            "source": "./independent-reviewer",
+            "version": "1.0.0",
+            "description": "Carry out an independent review of all changes since the last commit using the `claude` CLI and write the feedback in `planning/REVIEW.md`.",
+            "author": {
+                "name": "maks-231",
+                "email": "m.ahtirschii@gmail.com"
+            }
+        }
+    ]
+}

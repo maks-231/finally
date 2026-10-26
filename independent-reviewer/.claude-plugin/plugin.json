@@ -1,0 +1,9 @@
+{
+    "name": "independent-reviewer",
+    "description": "Carry out an independent review of all changes since the last commit using the `claude` CLI and write the feedback in `planning/REVIEW.md`.",
+    "version": "1.0.0",
+    "author": {
+        "name": "maks-231",
+        "email": "m.ahtirschii@gmail.com"
+    }
+}
