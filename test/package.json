@@ -1,0 +1,13 @@
+{
+  "name": "finally-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright E2E suite for the FinAlly trading workstation (PLAN.md §12).",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

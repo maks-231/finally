@@ -1,0 +1,43 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: finally:e2e
+    environment:
+      - LLM_MOCK=true
+    # No .env-file: LLM_MOCK=true alone is enough to exercise the full
+    # chat -> auto-execution pipeline deterministically (see
+    # backend/app/llm/mock.py). OPENROUTER_API_KEY/MASSIVE_API_KEY are
+    # intentionally left unset so the suite only ever talks to the
+    # simulator + mock LLM, never a real network dependency.
+    ports:
+      - "8000:8000"
+    # Fresh, anonymous volume every run -> clean seeded DB each time (do not
+    # reuse a named volume here, or watchlist/portfolio state will leak
+    # between test runs).
+    volumes:
+      - app_db:/app/db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.48.0-noble
+    working_dir: /e2e
+    volumes:
+      - ./:/e2e
+    environment:
+      - BASE_URL=http://app:8000
+      - CI=true
+    depends_on:
+      app:
+        condition: service_healthy
+    command: >
+      bash -c "npm install && npx playwright test --reporter=list"
+
+volumes:
+  app_db:

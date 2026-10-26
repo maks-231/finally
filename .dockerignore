@@ -1,0 +1,33 @@
+.git
+.github
+.idea
+.vscode
+planning
+test
+README.md
+README_OLD.md
+LICENSE
+independent-reviewer
+
+# Frontend build artifacts / deps — rebuilt inside the image
+frontend/node_modules
+frontend/.next
+frontend/out
+frontend/.swc
+
+# Backend build artifacts / deps — rebuilt inside the image
+backend/.venv
+backend/__pycache__
+backend/.pytest_cache
+backend/.ruff_cache
+backend/htmlcov
+backend/.coverage
+**/__pycache__
+**/*.pyc
+
+# Runtime data — never belongs in the image
+db/*.db
+db/*.db-journal
+db/*.db-wal
+db/*.db-shm
+.env
