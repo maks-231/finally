@@ -1,0 +1,39 @@
+{
+  "source_path": "/home/maks/Documents/claude/finally/planning/REVIEW.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Review: Changes Since Last Commit",
+  "summary": "A review of uncommitted repo changes flagging duplicate/uncoordinated claude -p review automations, a shared output-file collision, and stray or superseding doc copies.",
+  "scope": [
+    "claude -p review automation",
+    "Stop hook",
+    "independent-reviewer plugin",
+    "change-reviewer agent",
+    "reviewer agent",
+    "planning/REVIEW.md output collisions",
+    "planning market-data doc duplication (MARKET_INTERFACE.md, MARKET_SIMULATOR.md, MASSIVE_API.md)",
+    "stray root files (package.json, README_OLD.md)"
+  ],
+  "cross_refs": [
+    ".claude/settings.json",
+    ".claude/agents/change-reviewer.md",
+    ".claude/agents/reviewer.md",
+    "independent-reviewer/.claude-plugin/hooks/hooks.json",
+    "independent-reviewer/scripts/review-after-commit.sh",
+    "planning/MARKET_INTERFACE.md",
+    "planning/MARKET_SIMULATOR.md",
+    "planning/MASSIVE_API.md",
+    "planning/archive/MARKET_INTERFACE.md",
+    "planning/MARKET_DATA_SUMMARY.md",
+    "CLAUDE.md",
+    "PLAN.md",
+    "package.json",
+    "package-lock.json",
+    "README_OLD.md",
+    "README.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

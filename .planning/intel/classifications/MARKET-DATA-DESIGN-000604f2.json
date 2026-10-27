@@ -1,0 +1,29 @@
+{
+  "source_path": "/home/maks/Documents/claude/finally/planning/MARKET_DATA_DESIGN.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Market Data Backend — Design",
+  "summary": "As-implemented technical design for FinAlly's market data subsystem: the MarketDataSource interface, PriceCache, GBM simulator, and Massive REST client.",
+  "scope": [
+    "MarketDataSource interface",
+    "PriceCache",
+    "GBM simulator",
+    "SimulatorDataSource",
+    "MassiveDataSource / Massive (Polygon.io) REST client",
+    "SSE price streaming endpoint",
+    "market data factory and lifecycle",
+    "market data test suite"
+  ],
+  "cross_refs": [
+    "MARKET_INTERFACE.md",
+    "MARKET_SIMULATOR.md",
+    "MASSIVE_API.md",
+    "planning/archive/MARKET_DATA_DESIGN.md",
+    "MARKET_DATA_SUMMARY.md",
+    "PLAN.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

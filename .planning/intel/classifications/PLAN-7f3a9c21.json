@@ -1,0 +1,29 @@
+{
+  "source_path": "/home/maks/Documents/claude/finally/planning/PLAN.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "FinAlly — AI Trading Workstation",
+  "summary": "Full project specification for FinAlly, an AI-powered trading workstation covering architecture, data model, API endpoints, LLM integration, frontend design, Docker deployment, and testing strategy.",
+  "scope": [
+    "frontend (Next.js static export)",
+    "backend (FastAPI/uv)",
+    "SQLite database",
+    "market data simulator",
+    "Massive API integration",
+    "SSE price streaming",
+    "portfolio management",
+    "trade execution",
+    "watchlist",
+    "LLM chat assistant (LiteLLM/OpenRouter/Cerebras)",
+    "Docker deployment",
+    "Playwright E2E testing"
+  ],
+  "cross_refs": [
+    "planning/MARKET_DATA_SUMMARY.md",
+    "planning/archive"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

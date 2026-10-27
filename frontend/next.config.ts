@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // `next dev`'s rewrite proxy (below) gzip-compresses proxied responses
+  // whenever the client sends Accept-Encoding: gzip (every real browser).
+  // Gzip buffers to build compression blocks, which breaks SSE — the
+  // backend already sets Cache-Control: no-cache / X-Accel-Buffering: no,
+  // but those are moot once Next re-buffers the stream for compression.
+  // No effect on the production static export (no Next.js server runs).
+  compress: false,
   turbopack: {
     root: __dirname,
     rules: {

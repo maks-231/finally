@@ -1,0 +1,22 @@
+{
+  "source_path": "/home/maks/Documents/claude/finally/planning/MARKET_DATA_SUMMARY.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Market Data Backend — Summary",
+  "summary": "Summarizes the completed, tested market data subsystem (GBM simulator and Massive/Polygon.io API) including architecture, modules, test coverage, and usage.",
+  "scope": [
+    "market data subsystem",
+    "price simulator (GBM)",
+    "Massive/Polygon.io API client",
+    "PriceCache",
+    "SSE price streaming",
+    "backend/app/market modules",
+    "test suite results",
+    "demo script"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}
